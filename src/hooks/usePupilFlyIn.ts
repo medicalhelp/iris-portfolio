@@ -24,7 +24,7 @@ export function usePupilFlyIn(
       v: 1.0,
       duration: 0.3,
       ease: 'power2.in',
-      onUpdate: function() { setDilation(this.targets()[0].v); },
+      onUpdate: function() { setDilation((this.targets()[0] as { v: number }).v); },
     });
 
     // Phase 2: Camera flies forward into pupil (800ms)

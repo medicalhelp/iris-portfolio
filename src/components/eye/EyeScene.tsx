@@ -2,6 +2,7 @@
 
 import * as THREE from 'three';
 import { useRef, useMemo, useEffect } from 'react';
+import { useFrame } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
 import type { Project } from '@/data/projects';
 import { projects } from '@/data/projects';
@@ -11,6 +12,9 @@ import { createPupilMaterial } from '@/shaders/pupilShader';
 import { createCorneaMaterial } from '@/shaders/corneaShader';
 import { createProjectLayerMaterial } from '@/shaders/projectLayerShader';
 import { useEyeUniforms } from '@/hooks/useEyeUniforms';
+import { useMouseParallax } from '@/hooks/useMouseParallax';
+import { useBlink } from '@/hooks/useBlink';
+import { usePupilFlyIn } from '@/hooks/usePupilFlyIn';
 
 interface EyeSceneProps {
   project: Project;
@@ -22,6 +26,9 @@ interface EyeSceneProps {
 export default function EyeScene({ project, currentProjectIndex = 0, nextProjectIndex = 1, onTransitionComplete }: EyeSceneProps) {
   // onTransitionComplete is wired into useProjectTransition in Phase 5
   void onTransitionComplete;
+  const groupRef = useRef<THREE.Group>(null!);
+  const upperLidRef = useRef<THREE.Mesh>(null!);
+  const lowerLidRef = useRef<THREE.Mesh>(null!);
   const irisMaterialRef = useRef<THREE.ShaderMaterial>(null!);
   const irisMaterial = useMemo(() => createIrisMaterial(), []);
 
@@ -64,8 +71,19 @@ export default function EyeScene({ project, currentProjectIndex = 0, nextProject
     cornea: corneaMaterialRef,
     projectLayer: projectLayerRef,
   });
-  // eyeControls available for Phase 5/6 — suppress unused warning for now
-  void eyeControls;
+  const { flyIn } = usePupilFlyIn(eyeControls.setDilation, currentProjectIndex ?? 0);
+
+  useBlink(upperLidRef, lowerLidRef);
+
+  const { getRotation } = useMouseParallax();
+
+  useFrame(() => {
+    if (groupRef.current) {
+      const rot = getRotation();
+      groupRef.current.rotation.x = rot.x;
+      groupRef.current.rotation.y = rot.y;
+    }
+  });
 
   return (
     <>
@@ -98,7 +116,7 @@ export default function EyeScene({ project, currentProjectIndex = 0, nextProject
       />
 
       {/* Eye geometry */}
-      <group name="eye">
+      <group name="eye" ref={groupRef}>
         {/* Sclera — the white eyeball */}
         <mesh name="sclera">
           <sphereGeometry args={[1.0, 64, 64]} />
@@ -118,7 +136,7 @@ export default function EyeScene({ project, currentProjectIndex = 0, nextProject
         </mesh>
 
         {/* Pupil disc — small black circle at center of iris */}
-        <mesh name="pupil" position={[0, 0, 1.006]}>
+        <mesh name="pupil" position={[0, 0, 1.006]} onClick={flyIn}>
           <circleGeometry args={[0.28, 64]} />
           <primitive object={pupilMaterial} ref={pupilMaterialRef} attach="material" />
         </mesh>
@@ -127,6 +145,28 @@ export default function EyeScene({ project, currentProjectIndex = 0, nextProject
         <mesh name="cornea">
           <sphereGeometry args={[1.05, 64, 64]} />
           <primitive object={corneaMaterial} ref={corneaMaterialRef} attach="material" />
+        </mesh>
+
+        {/* Upper eyelid — dark arc that sweeps down to close */}
+        <mesh
+          ref={upperLidRef}
+          name="upperLid"
+          position={[0, 0.02, 0]}
+        >
+          {/* SphereGeometry slice: just the upper half, slightly bigger than cornea */}
+          <sphereGeometry args={[1.08, 64, 32, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
+          <meshStandardMaterial color="#1a0a05" roughness={0.8} metalness={0} side={THREE.FrontSide} />
+        </mesh>
+
+        {/* Lower eyelid — dark arc that sweeps up to close */}
+        <mesh
+          ref={lowerLidRef}
+          name="lowerLid"
+          position={[0, -0.02, 0]}
+          rotation={[Math.PI, 0, 0]}
+        >
+          <sphereGeometry args={[1.08, 64, 32, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
+          <meshStandardMaterial color="#1a0a05" roughness={0.8} metalness={0} side={THREE.FrontSide} />
         </mesh>
       </group>
     </>

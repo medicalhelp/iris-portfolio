@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import EyeScene from './EyeScene';
@@ -22,7 +23,9 @@ export default function EyeCanvas() {
           gl.setClearColor('#0a0a0a');
         }}
       >
-        <EyeScene project={projects[0]} />
+        <Suspense fallback={null}>
+          <EyeScene project={projects[0]} currentProjectIndex={0} nextProjectIndex={1} />
+        </Suspense>
         {/* OrbitControls for dev debugging — disable zoom */}
         <OrbitControls enableZoom={false} />
       </Canvas>

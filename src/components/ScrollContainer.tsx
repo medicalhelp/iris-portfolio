@@ -12,25 +12,28 @@ export default function ScrollContainer() {
   useEffect(() => {
     if (!containerRef.current) return;
 
+    const dispatch = (index: number) =>
+      window.dispatchEvent(new CustomEvent('iris:project-change', { detail: { index } }));
+
     const sections = containerRef.current.querySelectorAll('.scroll-section');
+    const triggers: ReturnType<typeof ScrollTrigger.create>[] = [];
 
     sections.forEach((section, index) => {
-      ScrollTrigger.create({
-        trigger: section,
-        start: 'top center',
-        end: 'bottom center',
-        onEnter: () =>
-          window.dispatchEvent(
-            new CustomEvent('iris:project-change', { detail: { index } })
-          ),
-        onEnterBack: () =>
-          window.dispatchEvent(
-            new CustomEvent('iris:project-change', { detail: { index } })
-          ),
-      });
+      triggers.push(
+        ScrollTrigger.create({
+          trigger: section,
+          start: 'top center',
+          end: 'bottom center',
+          onEnter: () => dispatch(index),
+          onEnterBack: () => dispatch(index),
+        })
+      );
     });
 
-    return () => ScrollTrigger.getAll().forEach((t) => t.kill());
+    // Trigger for section already in view on load
+    ScrollTrigger.refresh();
+
+    return () => triggers.forEach((t) => t.kill());
   }, []);
 
   return (
@@ -62,7 +65,7 @@ export default function ScrollContainer() {
                 opacity: 0.5,
               }}
             >
-              0{index + 1}
+              {String(index + 1).padStart(2, '0')}
             </p>
             <h2
               style={{

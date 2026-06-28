@@ -2,7 +2,6 @@
 
 import { useState, Suspense, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
 import EyeScene from './EyeScene';
 import { projects } from '@/data/projects';
 
@@ -43,8 +42,6 @@ export default function EyeCanvas() {
             onTransitionComplete={setCurrentProjectIndex}
           />
         </Suspense>
-        {/* OrbitControls for dev debugging — disable zoom */}
-        <OrbitControls enableZoom={false} />
       </Canvas>
     </div>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import EyeScene from './EyeScene';
@@ -9,6 +9,15 @@ import { projects } from '@/data/projects';
 export default function EyeCanvas() {
   const [currentProjectIndex, setCurrentProjectIndex] = useState(0);
   const nextProjectIndex = (currentProjectIndex + 1) % projects.length;
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { index } = (e as CustomEvent).detail;
+      setCurrentProjectIndex(index);
+    };
+    window.addEventListener('iris:project-change', handler);
+    return () => window.removeEventListener('iris:project-change', handler);
+  }, []);
 
   return (
     <div

@@ -2,12 +2,12 @@
 
 import * as THREE from 'three';
 import { useRef, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
 import type { Project } from '@/data/projects';
 import { createIrisMaterial } from '@/shaders/irisShader';
 import { createScleraMaterial } from '@/shaders/scleraShader';
 import { createPupilMaterial } from '@/shaders/pupilShader';
 import { createCorneaMaterial } from '@/shaders/corneaShader';
+import { useEyeUniforms } from '@/hooks/useEyeUniforms';
 
 interface EyeSceneProps {
   project: Project;
@@ -31,21 +31,14 @@ export default function EyeScene({ project }: EyeSceneProps) {
     irisMaterial.uniforms.irisColor.value.set(project.irisColor);
   }, [irisMaterial, project.irisColor]);
 
-  // Animate time uniform each frame
-  useFrame((_, delta) => {
-    if (irisMaterialRef.current) {
-      irisMaterialRef.current.uniforms.time.value += delta;
-    }
-    if (scleraMaterialRef.current) {
-      scleraMaterialRef.current.uniforms.time.value += delta;
-    }
-    if (pupilMaterialRef.current) {
-      pupilMaterialRef.current.uniforms.time.value += delta;
-    }
-    if (corneaMaterialRef.current) {
-      corneaMaterialRef.current.uniforms.time.value += delta;
-    }
+  const eyeControls = useEyeUniforms({
+    iris: irisMaterialRef,
+    sclera: scleraMaterialRef,
+    pupil: pupilMaterialRef,
+    cornea: corneaMaterialRef,
   });
+  // eyeControls.setDilation / setDissolve / setIrisColor available for Phase 6
+  void eyeControls; // used in Phase 6 — suppress unused warning for now
 
   return (
     <>

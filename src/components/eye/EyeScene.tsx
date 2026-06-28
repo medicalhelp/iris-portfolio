@@ -16,9 +16,12 @@ interface EyeSceneProps {
   project: Project;
   currentProjectIndex?: number;
   nextProjectIndex?: number;
+  onTransitionComplete?: (newIndex: number) => void;
 }
 
-export default function EyeScene({ project, currentProjectIndex = 0, nextProjectIndex = 1 }: EyeSceneProps) {
+export default function EyeScene({ project, currentProjectIndex = 0, nextProjectIndex = 1, onTransitionComplete }: EyeSceneProps) {
+  // onTransitionComplete is wired into useProjectTransition in Phase 5
+  void onTransitionComplete;
   const irisMaterialRef = useRef<THREE.ShaderMaterial>(null!);
   const irisMaterial = useMemo(() => createIrisMaterial(), []);
 
@@ -41,6 +44,13 @@ export default function EyeScene({ project, currentProjectIndex = 0, nextProject
     () => createProjectLayerMaterial(texA, texB),
     [texA, texB],
   );
+
+  // Dispose old projectLayerMaterial when it is recreated (textures changed)
+  useEffect(() => {
+    return () => {
+      projectLayerMaterial.dispose();
+    };
+  }, [projectLayerMaterial]);
 
   // Sync project iris color into the shader uniform after commit
   useEffect(() => {

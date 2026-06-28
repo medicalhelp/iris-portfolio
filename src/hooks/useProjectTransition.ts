@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { projects } from '@/data/projects';
 
@@ -7,9 +7,11 @@ interface TransitionRefs {
   setIrisColorLerp: (a: string, b: string, progress: number) => void;
   setProjectLayerDissolve?: (v: number) => void;
   setProjectLayerIrisColorProgress?: (v: number) => void;
+  onTransitionComplete?: (newIndex: number) => void;
 }
 
 export function useProjectTransition(refs: TransitionRefs) {
+  const [currentIndex, setCurrentIndex] = useState(0);
   const currentIndexRef = useRef(0);
   const isTransitioningRef = useRef(false);
 
@@ -45,12 +47,14 @@ export function useProjectTransition(refs: TransitionRefs) {
         refs.setDissolve(0);
         refs.setProjectLayerDissolve?.(0);
         refs.setProjectLayerIrisColorProgress?.(0);
+        setCurrentIndex(nextIndex);
+        refs.onTransitionComplete?.(nextIndex);
       },
     });
   }, [refs]);
 
   return {
-    currentIndex: currentIndexRef.current,
+    currentIndex,
     transitionTo,
   };
 }

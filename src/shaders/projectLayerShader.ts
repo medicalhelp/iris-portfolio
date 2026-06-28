@@ -16,7 +16,7 @@ export function createProjectLayerMaterial(textureA: Texture, textureB: Texture)
       varying vec3 vNormal;
       void main() {
         vUv = uv;
-        vNormal = normalize(normal);
+        vNormal = normalize(normalMatrix * normal);
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }
     `,

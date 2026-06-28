@@ -46,8 +46,8 @@ export default function EyeScene({ project }: EyeSceneProps) {
           <meshStandardMaterial color="#f5f0e8" roughness={0.15} metalness={0.0} />
         </mesh>
 
-        {/* Iris ring — flat ring sitting just inside the sclera surface */}
-        <mesh name="iris" position={[0, 0, 0.18]} rotation={[0, 0, 0]}>
+        {/* Iris ring — positioned in front of sclera surface, inside cornea */}
+        <mesh name="iris" position={[0, 0, 1.005]} rotation={[0, 0, 0]}>
           <ringGeometry args={[0.28, 0.52, 128]} />
           <meshStandardMaterial
             color={project.irisColor}
@@ -58,7 +58,7 @@ export default function EyeScene({ project }: EyeSceneProps) {
         </mesh>
 
         {/* Pupil disc — small black circle at center of iris */}
-        <mesh name="pupil" position={[0, 0, 0.19]}>
+        <mesh name="pupil" position={[0, 0, 1.006]}>
           <circleGeometry args={[0.28, 64]} />
           <meshStandardMaterial color="#050505" roughness={0.05} metalness={0.0} />
         </mesh>

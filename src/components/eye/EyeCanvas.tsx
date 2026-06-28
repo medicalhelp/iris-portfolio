@@ -24,6 +24,7 @@ export default function EyeCanvas() {
         position: 'fixed',
         inset: 0,
         zIndex: 0,
+        cursor: 'pointer',
       }}
     >
       <Canvas

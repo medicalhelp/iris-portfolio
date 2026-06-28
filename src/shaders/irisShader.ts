@@ -10,10 +10,8 @@ export function createIrisMaterial() {
     },
     vertexShader: `
       varying vec2 vUv;
-      varying vec3 vNormal;
       void main() {
         vUv = uv;
-        vNormal = normal;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }
     `,
@@ -82,8 +80,8 @@ export function createIrisMaterial() {
         // Add subtle brightness variation
         color += pattern * 0.15 * vec3(1.0, 0.9, 0.5);
 
-        // Dissolve (for future transition use — premultiplied alpha fade)
-        float alpha = 1.0 - dissolve * 0.5;
+        // Dissolve (for future transition use — full fade to transparent)
+        float alpha = 1.0 - dissolve;
 
         gl_FragColor = vec4(color, alpha);
       }

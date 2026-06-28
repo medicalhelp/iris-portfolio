@@ -1,7 +1,7 @@
 'use client';
 
 import * as THREE from 'three';
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useEffect } from 'react';
 import type { Project } from '@/data/projects';
 import { createIrisMaterial } from '@/shaders/irisShader';
 import { createScleraMaterial } from '@/shaders/scleraShader';
@@ -26,8 +26,8 @@ export default function EyeScene({ project }: EyeSceneProps) {
   const corneaMaterialRef = useRef<THREE.ShaderMaterial>(null!);
   const corneaMaterial = useMemo(() => createCorneaMaterial(), []);
 
-  // Sync project iris color into the shader uniform
-  useMemo(() => {
+  // Sync project iris color into the shader uniform after commit
+  useEffect(() => {
     irisMaterial.uniforms.irisColor.value.set(project.irisColor);
   }, [irisMaterial, project.irisColor]);
 

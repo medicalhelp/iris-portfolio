@@ -23,19 +23,19 @@ export function useEyeUniforms(refs: EyeMaterialRefs) {
     if (refs.pupil.current) {
       refs.pupil.current.uniforms.dilation.value = value;
     }
-  }, [refs.pupil]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- refs are stable RefObjects
 
   const setDissolve = useCallback((value: number) => {
     if (refs.iris.current) {
       refs.iris.current.uniforms.dissolve.value = value;
     }
-  }, [refs.iris]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- refs are stable RefObjects
 
   const setIrisColor = useCallback((color: string) => {
     if (refs.iris.current) {
       refs.iris.current.uniforms.irisColor.value.set(color);
     }
-  }, [refs.iris]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- refs are stable RefObjects
 
   return { setDilation, setDissolve, setIrisColor };
 }

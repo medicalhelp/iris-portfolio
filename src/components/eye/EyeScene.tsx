@@ -1,13 +1,39 @@
 'use client';
 
 import * as THREE from 'three';
+import { useRef, useMemo } from 'react';
+import { useFrame } from '@react-three/fiber';
 import type { Project } from '@/data/projects';
+import { createIrisMaterial } from '@/shaders/irisShader';
+import { createScleraMaterial } from '@/shaders/scleraShader';
+import { createPupilMaterial } from '@/shaders/pupilShader';
 
 interface EyeSceneProps {
   project: Project;
 }
 
 export default function EyeScene({ project }: EyeSceneProps) {
+  const irisMaterialRef = useRef<THREE.ShaderMaterial>(null!);
+  const irisMaterial = useMemo(() => createIrisMaterial(), []);
+
+  const scleraMaterialRef = useRef<THREE.ShaderMaterial>(null!);
+  const scleraMaterial = useMemo(() => createScleraMaterial(), []);
+
+  // Sync project iris color into the shader uniform
+  useMemo(() => {
+    irisMaterial.uniforms.irisColor.value.set(project.irisColor);
+  }, [irisMaterial, project.irisColor]);
+
+  // Animate time uniform each frame
+  useFrame((_, delta) => {
+    if (irisMaterialRef.current) {
+      irisMaterialRef.current.uniforms.time.value += delta;
+    }
+    if (scleraMaterialRef.current) {
+      scleraMaterialRef.current.uniforms.time.value += delta;
+    }
+  });
+
   return (
     <>
       {/* Lighting */}
@@ -43,18 +69,13 @@ export default function EyeScene({ project }: EyeSceneProps) {
         {/* Sclera — the white eyeball */}
         <mesh name="sclera">
           <sphereGeometry args={[1.0, 64, 64]} />
-          <meshStandardMaterial color="#f5f0e8" roughness={0.15} metalness={0.0} />
+          <primitive object={scleraMaterial} ref={scleraMaterialRef} attach="material" />
         </mesh>
 
         {/* Iris ring — positioned in front of sclera surface, inside cornea */}
         <mesh name="iris" position={[0, 0, 1.005]} rotation={[0, 0, 0]}>
           <ringGeometry args={[0.28, 0.52, 128]} />
-          <meshStandardMaterial
-            color={project.irisColor}
-            roughness={0.3}
-            metalness={0.1}
-            side={THREE.FrontSide}
-          />
+          <primitive object={irisMaterial} ref={irisMaterialRef} attach="material" />
         </mesh>
 
         {/* Pupil disc — small black circle at center of iris */}

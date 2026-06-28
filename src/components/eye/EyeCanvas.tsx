@@ -1,11 +1,15 @@
 'use client';
 
+import { useState, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import EyeScene from './EyeScene';
 import { projects } from '@/data/projects';
 
 export default function EyeCanvas() {
+  const [currentProjectIndex, setCurrentProjectIndex] = useState(0);
+  const nextProjectIndex = (currentProjectIndex + 1) % projects.length;
+
   return (
     <div
       style={{
@@ -22,7 +26,14 @@ export default function EyeCanvas() {
           gl.setClearColor('#0a0a0a');
         }}
       >
-        <EyeScene project={projects[0]} />
+        <Suspense fallback={null}>
+          <EyeScene
+            project={projects[currentProjectIndex]}
+            currentProjectIndex={currentProjectIndex}
+            nextProjectIndex={nextProjectIndex}
+            onTransitionComplete={setCurrentProjectIndex}
+          />
+        </Suspense>
         {/* OrbitControls for dev debugging — disable zoom */}
         <OrbitControls enableZoom={false} />
       </Canvas>

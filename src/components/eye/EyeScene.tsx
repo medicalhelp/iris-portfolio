@@ -2,18 +2,26 @@
 
 import * as THREE from 'three';
 import { useRef, useMemo, useEffect } from 'react';
+import { useTexture } from '@react-three/drei';
 import type { Project } from '@/data/projects';
+import { projects } from '@/data/projects';
 import { createIrisMaterial } from '@/shaders/irisShader';
 import { createScleraMaterial } from '@/shaders/scleraShader';
 import { createPupilMaterial } from '@/shaders/pupilShader';
 import { createCorneaMaterial } from '@/shaders/corneaShader';
+import { createProjectLayerMaterial } from '@/shaders/projectLayerShader';
 import { useEyeUniforms } from '@/hooks/useEyeUniforms';
 
 interface EyeSceneProps {
   project: Project;
+  currentProjectIndex?: number;
+  nextProjectIndex?: number;
+  onTransitionComplete?: (newIndex: number) => void;
 }
 
-export default function EyeScene({ project }: EyeSceneProps) {
+export default function EyeScene({ project, currentProjectIndex = 0, nextProjectIndex = 1, onTransitionComplete }: EyeSceneProps) {
+  // onTransitionComplete is wired into useProjectTransition in Phase 5
+  void onTransitionComplete;
   const irisMaterialRef = useRef<THREE.ShaderMaterial>(null!);
   const irisMaterial = useMemo(() => createIrisMaterial(), []);
 
@@ -26,6 +34,24 @@ export default function EyeScene({ project }: EyeSceneProps) {
   const corneaMaterialRef = useRef<THREE.ShaderMaterial>(null!);
   const corneaMaterial = useMemo(() => createCorneaMaterial(), []);
 
+  // Project texture layer
+  const projectLayerRef = useRef<THREE.ShaderMaterial>(null!);
+  const [texA, texB] = useTexture([
+    projects[currentProjectIndex].image,
+    projects[nextProjectIndex].image,
+  ]);
+  const projectLayerMaterial = useMemo(
+    () => createProjectLayerMaterial(texA, texB),
+    [texA, texB],
+  );
+
+  // Dispose old projectLayerMaterial when it is recreated (textures changed)
+  useEffect(() => {
+    return () => {
+      projectLayerMaterial.dispose();
+    };
+  }, [projectLayerMaterial]);
+
   // Sync project iris color into the shader uniform after commit
   useEffect(() => {
     irisMaterial.uniforms.irisColor.value.set(project.irisColor);
@@ -36,9 +62,10 @@ export default function EyeScene({ project }: EyeSceneProps) {
     sclera: scleraMaterialRef,
     pupil: pupilMaterialRef,
     cornea: corneaMaterialRef,
+    projectLayer: projectLayerRef,
   });
-  // eyeControls.setDilation / setDissolve / setIrisColor available for Phase 6
-  void eyeControls; // used in Phase 6 — suppress unused warning for now
+  // eyeControls available for Phase 5/6 — suppress unused warning for now
+  void eyeControls;
 
   return (
     <>
@@ -76,6 +103,12 @@ export default function EyeScene({ project }: EyeSceneProps) {
         <mesh name="sclera">
           <sphereGeometry args={[1.0, 64, 64]} />
           <primitive object={scleraMaterial} ref={scleraMaterialRef} attach="material" />
+        </mesh>
+
+        {/* Project image layer — wraps entire eyeball between sclera and cornea */}
+        <mesh name="projectLayer">
+          <sphereGeometry args={[1.01, 64, 64]} />
+          <primitive object={projectLayerMaterial} ref={projectLayerRef} attach="material" />
         </mesh>
 
         {/* Iris ring — positioned in front of sclera surface, inside cornea */}

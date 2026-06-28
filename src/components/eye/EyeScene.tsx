@@ -1,13 +1,45 @@
 'use client';
 
 import * as THREE from 'three';
+import { useRef, useMemo, useEffect } from 'react';
 import type { Project } from '@/data/projects';
+import { createIrisMaterial } from '@/shaders/irisShader';
+import { createScleraMaterial } from '@/shaders/scleraShader';
+import { createPupilMaterial } from '@/shaders/pupilShader';
+import { createCorneaMaterial } from '@/shaders/corneaShader';
+import { useEyeUniforms } from '@/hooks/useEyeUniforms';
 
 interface EyeSceneProps {
   project: Project;
 }
 
 export default function EyeScene({ project }: EyeSceneProps) {
+  const irisMaterialRef = useRef<THREE.ShaderMaterial>(null!);
+  const irisMaterial = useMemo(() => createIrisMaterial(), []);
+
+  const scleraMaterialRef = useRef<THREE.ShaderMaterial>(null!);
+  const scleraMaterial = useMemo(() => createScleraMaterial(), []);
+
+  const pupilMaterialRef = useRef<THREE.ShaderMaterial>(null!);
+  const pupilMaterial = useMemo(() => createPupilMaterial(), []);
+
+  const corneaMaterialRef = useRef<THREE.ShaderMaterial>(null!);
+  const corneaMaterial = useMemo(() => createCorneaMaterial(), []);
+
+  // Sync project iris color into the shader uniform after commit
+  useEffect(() => {
+    irisMaterial.uniforms.irisColor.value.set(project.irisColor);
+  }, [irisMaterial, project.irisColor]);
+
+  const eyeControls = useEyeUniforms({
+    iris: irisMaterialRef,
+    sclera: scleraMaterialRef,
+    pupil: pupilMaterialRef,
+    cornea: corneaMaterialRef,
+  });
+  // eyeControls.setDilation / setDissolve / setIrisColor available for Phase 6
+  void eyeControls; // used in Phase 6 — suppress unused warning for now
+
   return (
     <>
       {/* Lighting */}
@@ -43,40 +75,25 @@ export default function EyeScene({ project }: EyeSceneProps) {
         {/* Sclera — the white eyeball */}
         <mesh name="sclera">
           <sphereGeometry args={[1.0, 64, 64]} />
-          <meshStandardMaterial color="#f5f0e8" roughness={0.15} metalness={0.0} />
+          <primitive object={scleraMaterial} ref={scleraMaterialRef} attach="material" />
         </mesh>
 
         {/* Iris ring — positioned in front of sclera surface, inside cornea */}
         <mesh name="iris" position={[0, 0, 1.005]} rotation={[0, 0, 0]}>
           <ringGeometry args={[0.28, 0.52, 128]} />
-          <meshStandardMaterial
-            color={project.irisColor}
-            roughness={0.3}
-            metalness={0.1}
-            side={THREE.FrontSide}
-          />
+          <primitive object={irisMaterial} ref={irisMaterialRef} attach="material" />
         </mesh>
 
         {/* Pupil disc — small black circle at center of iris */}
         <mesh name="pupil" position={[0, 0, 1.006]}>
           <circleGeometry args={[0.28, 64]} />
-          <meshStandardMaterial color="#050505" roughness={0.05} metalness={0.0} />
+          <primitive object={pupilMaterial} ref={pupilMaterialRef} attach="material" />
         </mesh>
 
         {/* Cornea — transparent shell slightly larger than the sclera */}
         <mesh name="cornea">
           <sphereGeometry args={[1.05, 64, 64]} />
-          <meshPhysicalMaterial
-            color="#ffffff"
-            transmission={0.95}
-            roughness={0}
-            metalness={0}
-            ior={1.38}
-            thickness={0.05}
-            transparent={true}
-            opacity={0.12}
-            side={THREE.FrontSide}
-          />
+          <primitive object={corneaMaterial} ref={corneaMaterialRef} attach="material" />
         </mesh>
       </group>
     </>

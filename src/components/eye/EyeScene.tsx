@@ -1,11 +1,7 @@
 'use client';
 
-import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { Project } from '@/data/projects';
-
-// useFrame imported for Phase 6 animation (placeholder)
-void useFrame;
 
 interface EyeSceneProps {
   project: Project;

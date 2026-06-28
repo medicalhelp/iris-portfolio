@@ -7,6 +7,7 @@ import type { Project } from '@/data/projects';
 import { createIrisMaterial } from '@/shaders/irisShader';
 import { createScleraMaterial } from '@/shaders/scleraShader';
 import { createPupilMaterial } from '@/shaders/pupilShader';
+import { createCorneaMaterial } from '@/shaders/corneaShader';
 
 interface EyeSceneProps {
   project: Project;
@@ -18,6 +19,12 @@ export default function EyeScene({ project }: EyeSceneProps) {
 
   const scleraMaterialRef = useRef<THREE.ShaderMaterial>(null!);
   const scleraMaterial = useMemo(() => createScleraMaterial(), []);
+
+  const pupilMaterialRef = useRef<THREE.ShaderMaterial>(null!);
+  const pupilMaterial = useMemo(() => createPupilMaterial(), []);
+
+  const corneaMaterialRef = useRef<THREE.ShaderMaterial>(null!);
+  const corneaMaterial = useMemo(() => createCorneaMaterial(), []);
 
   // Sync project iris color into the shader uniform
   useMemo(() => {
@@ -31,6 +38,12 @@ export default function EyeScene({ project }: EyeSceneProps) {
     }
     if (scleraMaterialRef.current) {
       scleraMaterialRef.current.uniforms.time.value += delta;
+    }
+    if (pupilMaterialRef.current) {
+      pupilMaterialRef.current.uniforms.time.value += delta;
+    }
+    if (corneaMaterialRef.current) {
+      corneaMaterialRef.current.uniforms.time.value += delta;
     }
   });
 
@@ -81,23 +94,13 @@ export default function EyeScene({ project }: EyeSceneProps) {
         {/* Pupil disc — small black circle at center of iris */}
         <mesh name="pupil" position={[0, 0, 1.006]}>
           <circleGeometry args={[0.28, 64]} />
-          <meshStandardMaterial color="#050505" roughness={0.05} metalness={0.0} />
+          <primitive object={pupilMaterial} ref={pupilMaterialRef} attach="material" />
         </mesh>
 
         {/* Cornea — transparent shell slightly larger than the sclera */}
         <mesh name="cornea">
           <sphereGeometry args={[1.05, 64, 64]} />
-          <meshPhysicalMaterial
-            color="#ffffff"
-            transmission={0.95}
-            roughness={0}
-            metalness={0}
-            ior={1.38}
-            thickness={0.05}
-            transparent={true}
-            opacity={0.12}
-            side={THREE.FrontSide}
-          />
+          <primitive object={corneaMaterial} ref={corneaMaterialRef} attach="material" />
         </mesh>
       </group>
     </>

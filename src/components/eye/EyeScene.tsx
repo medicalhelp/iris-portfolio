@@ -1,9 +1,10 @@
 'use client';
 
 import * as THREE from 'three';
-import { useRef, useMemo, useEffect } from 'react';
+import { useRef, useMemo, useEffect, useState, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useTexture } from '@react-three/drei';
+import { useTexture, Html } from '@react-three/drei';
+import gsap from 'gsap';
 import type { Project } from '@/data/projects';
 import { projects } from '@/data/projects';
 import { createIrisMaterial } from '@/shaders/irisShader';
@@ -73,6 +74,59 @@ export default function EyeScene({ project, currentProjectIndex = 0, nextProject
   });
   const { flyIn } = usePupilFlyIn(eyeControls.setDilation, currentProjectIndex ?? 0);
 
+  // Hover state and refs for hover interactions
+  const [isHovered, setIsHovered] = useState(false);
+  const irisRingRef = useRef<THREE.Mesh>(null!);
+  const pointLightRef = useRef<THREE.PointLight>(null!);
+  const labelRef = useRef<HTMLDivElement>(null);
+
+  const onPupilEnter = useCallback(() => {
+    if (isHovered) return;
+    setIsHovered(true);
+    // Dilate pupil shader
+    const dilObj = { v: 0 };
+    gsap.to(dilObj, {
+      v: 0.8,
+      duration: 0.4,
+      ease: 'power2.out',
+      onUpdate: () => { eyeControls.setDilation(dilObj.v); },
+    });
+    // Contract iris ring scale
+    gsap.to(irisRingRef.current!.scale, { x: 0.9, y: 0.9, duration: 0.4, ease: 'power2.out' });
+    // Shift point light for reflection movement
+    gsap.to(pointLightRef.current!.position, { x: 0.3, y: 0.8, duration: 0.4, ease: 'power2.out' });
+    // Brighten label
+    const opObj = { op: 0.6 };
+    gsap.to(opObj, {
+      op: 1.0,
+      duration: 0.3,
+      onUpdate: () => {
+        if (labelRef.current) labelRef.current.style.opacity = String(opObj.op);
+      },
+    });
+  }, [isHovered, eyeControls]);
+
+  const onPupilLeave = useCallback(() => {
+    setIsHovered(false);
+    const dilObj = { v: 0.8 };
+    gsap.to(dilObj, {
+      v: 0,
+      duration: 0.4,
+      ease: 'power2.out',
+      onUpdate: () => { eyeControls.setDilation(dilObj.v); },
+    });
+    gsap.to(irisRingRef.current!.scale, { x: 1, y: 1, duration: 0.4, ease: 'power2.out' });
+    gsap.to(pointLightRef.current!.position, { x: 0, y: 0.5, duration: 0.4, ease: 'power2.out' });
+    const opObj = { op: 1.0 };
+    gsap.to(opObj, {
+      op: 0.6,
+      duration: 0.3,
+      onUpdate: () => {
+        if (labelRef.current) labelRef.current.style.opacity = String(opObj.op);
+      },
+    });
+  }, [eyeControls]);
+
   useBlink(upperLidRef, lowerLidRef);
 
   const { getRotation } = useMouseParallax();
@@ -108,6 +162,7 @@ export default function EyeScene({ project, currentProjectIndex = 0, nextProject
 
       {/* Corneal catch-light — small point at camera position */}
       <pointLight
+        ref={pointLightRef}
         position={[0, 0.5, 3]}
         intensity={0.8}
         color="#ffffff"
@@ -130,15 +185,44 @@ export default function EyeScene({ project, currentProjectIndex = 0, nextProject
         </mesh>
 
         {/* Iris ring — positioned in front of sclera surface, inside cornea */}
-        <mesh name="iris" position={[0, 0, 1.005]} rotation={[0, 0, 0]}>
+        <mesh ref={irisRingRef} name="iris" position={[0, 0, 1.005]} rotation={[0, 0, 0]}>
           <ringGeometry args={[0.28, 0.52, 128]} />
           <primitive object={irisMaterial} ref={irisMaterialRef} attach="material" />
         </mesh>
 
         {/* Pupil disc — small black circle at center of iris */}
-        <mesh name="pupil" position={[0, 0, 1.006]} onClick={flyIn}>
+        <mesh
+          name="pupil"
+          position={[0, 0, 1.006]}
+          onClick={flyIn}
+          onPointerEnter={onPupilEnter}
+          onPointerLeave={onPupilLeave}
+        >
           <circleGeometry args={[0.28, 64]} />
           <primitive object={pupilMaterial} ref={pupilMaterialRef} attach="material" />
+
+          {/* "View →" label overlay */}
+          <Html
+            center
+            position={[0, 0, 1.007]}
+            style={{ pointerEvents: 'none' }}
+          >
+            <div
+              ref={labelRef}
+              style={{
+                color: 'white',
+                fontSize: '0.75rem',
+                letterSpacing: '0.15em',
+                textTransform: 'uppercase',
+                opacity: 0.6,
+                userSelect: 'none',
+                textAlign: 'center',
+                lineHeight: 1.4,
+              }}
+            >
+              View<br />→
+            </div>
+          </Html>
         </mesh>
 
         {/* Cornea — transparent shell slightly larger than the sclera */}

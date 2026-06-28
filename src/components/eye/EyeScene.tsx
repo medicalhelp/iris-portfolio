@@ -74,6 +74,9 @@ export default function EyeScene({ project, currentProjectIndex = 0, nextProject
   });
   const { flyIn } = usePupilFlyIn(eyeControls.setDilation, currentProjectIndex ?? 0);
 
+  // Stable ref for dilation value so GSAP can kill tweens across rapid hover transitions
+  const dilRef = useRef({ v: 0 });
+
   // Hover state and refs for hover interactions
   const [isHovered, setIsHovered] = useState(false);
   const irisRingRef = useRef<THREE.Mesh>(null!);
@@ -84,12 +87,12 @@ export default function EyeScene({ project, currentProjectIndex = 0, nextProject
     if (isHovered) return;
     setIsHovered(true);
     // Dilate pupil shader
-    const dilObj = { v: 0 };
-    gsap.to(dilObj, {
+    gsap.killTweensOf(dilRef.current);
+    gsap.to(dilRef.current, {
       v: 0.8,
       duration: 0.4,
       ease: 'power2.out',
-      onUpdate: () => { eyeControls.setDilation(dilObj.v); },
+      onUpdate: () => { eyeControls.setDilation(dilRef.current.v); },
     });
     // Contract iris ring scale
     gsap.to(irisRingRef.current!.scale, { x: 0.9, y: 0.9, duration: 0.4, ease: 'power2.out' });
@@ -108,12 +111,12 @@ export default function EyeScene({ project, currentProjectIndex = 0, nextProject
 
   const onPupilLeave = useCallback(() => {
     setIsHovered(false);
-    const dilObj = { v: 0.8 };
-    gsap.to(dilObj, {
+    gsap.killTweensOf(dilRef.current);
+    gsap.to(dilRef.current, {
       v: 0,
       duration: 0.4,
       ease: 'power2.out',
-      onUpdate: () => { eyeControls.setDilation(dilObj.v); },
+      onUpdate: () => { eyeControls.setDilation(dilRef.current.v); },
     });
     gsap.to(irisRingRef.current!.scale, { x: 1, y: 1, duration: 0.4, ease: 'power2.out' });
     gsap.to(pointLightRef.current!.position, { x: 0, y: 0.5, duration: 0.4, ease: 'power2.out' });
@@ -126,6 +129,11 @@ export default function EyeScene({ project, currentProjectIndex = 0, nextProject
       },
     });
   }, [eyeControls]);
+
+  const handlePupilClick = useCallback(() => {
+    gsap.killTweensOf(dilRef.current);
+    flyIn(dilRef.current.v);
+  }, [flyIn]);
 
   useBlink(upperLidRef, lowerLidRef);
 
@@ -194,7 +202,7 @@ export default function EyeScene({ project, currentProjectIndex = 0, nextProject
         <mesh
           name="pupil"
           position={[0, 0, 1.006]}
-          onClick={flyIn}
+          onClick={handlePupilClick}
           onPointerEnter={onPupilEnter}
           onPointerLeave={onPupilLeave}
         >
@@ -226,7 +234,7 @@ export default function EyeScene({ project, currentProjectIndex = 0, nextProject
         </mesh>
 
         {/* Cornea — transparent shell slightly larger than the sclera */}
-        <mesh name="cornea">
+        <mesh name="cornea" raycast={() => null}>
           <sphereGeometry args={[1.05, 64, 64]} />
           <primitive object={corneaMaterial} ref={corneaMaterialRef} attach="material" />
         </mesh>

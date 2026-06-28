@@ -9,8 +9,10 @@ export function usePupilFlyIn(
 ) {
   const { camera } = useThree();
 
-  const flyIn = useCallback(() => {
+  const flyIn = useCallback((fromDilation = 0) => {
     const slug = projects[currentProjectIndex]?.slug ?? projects[0].slug;
+
+    const obj = { v: fromDilation };
 
     const tl = gsap.timeline({
       onComplete: () => {
@@ -20,11 +22,11 @@ export function usePupilFlyIn(
     });
 
     // Phase 1: Dilate pupil fully (300ms)
-    tl.to({ v: 0 }, {
+    tl.to(obj, {
       v: 1.0,
       duration: 0.3,
       ease: 'power2.in',
-      onUpdate: function() { setDilation((this.targets()[0] as { v: number }).v); },
+      onUpdate: () => { setDilation(obj.v); },
     });
 
     // Phase 2: Camera flies forward into pupil (800ms)

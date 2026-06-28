@@ -7,20 +7,24 @@ export function useBlink(
   lowerLidRef: React.RefObject<THREE.Mesh>
 ) {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const tlRef = useRef<gsap.core.Timeline | null>(null);
 
   const blink = () => {
-    const tl = gsap.timeline({
+    if (!upperLidRef.current || !lowerLidRef.current) return;
+
+    tlRef.current = gsap.timeline({
       onComplete: scheduleNext,
     });
 
     // Close: upper lid sweeps down, lower lid sweeps up — 150ms
-    tl.to(upperLidRef.current!.rotation, { x: -Math.PI * 0.48, duration: 0.15, ease: 'power2.in' }, 0)
-      .to(lowerLidRef.current!.rotation, { x: Math.PI * 0.48, duration: 0.15, ease: 'power2.in' }, 0)
+    tlRef.current
+      .to(upperLidRef.current.rotation, { x: -Math.PI * 0.48, duration: 0.15, ease: 'power2.in' }, 0)
+      .to(lowerLidRef.current.rotation, { x: Math.PI * 0.48, duration: 0.15, ease: 'power2.in' }, 0)
       // Hold closed: 80ms
       .to({}, { duration: 0.08 })
       // Open: 200ms
-      .to(upperLidRef.current!.rotation, { x: 0, duration: 0.2, ease: 'power2.out' })
-      .to(lowerLidRef.current!.rotation, { x: 0, duration: 0.2, ease: 'power2.out' }, '<');
+      .to(upperLidRef.current.rotation, { x: 0, duration: 0.2, ease: 'power2.out' })
+      .to(lowerLidRef.current.rotation, { x: 0, duration: 0.2, ease: 'power2.out' }, '<');
   };
 
   const scheduleNext = () => {
@@ -32,8 +36,7 @@ export function useBlink(
     scheduleNext();
     return () => {
       clearTimeout(timeoutRef.current);
-      gsap.killTweensOf(upperLidRef.current?.rotation);
-      gsap.killTweensOf(lowerLidRef.current?.rotation);
+      tlRef.current?.kill();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 }

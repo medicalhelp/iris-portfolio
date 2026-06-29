@@ -1,10 +1,38 @@
 'use client';
 
-import { useState, Suspense, useEffect } from 'react';
+import { useState, Suspense, useEffect, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
+import { useTexture, useProgress } from '@react-three/drei';
 import EyeScene from './EyeScene';
 import PostProcessing from './PostProcessing';
 import { projects } from '@/data/projects';
+import LoadingScreen from '../LoadingScreen';
+
+// Preload all project textures at module evaluation time (client-side only;
+// TextureLoader uses Image/fetch which are not available server-side).
+if (typeof window !== 'undefined') {
+  projects.forEach(p => useTexture.preload(p.image));
+}
+
+// Holds the overlay visible for an extra 300ms after DefaultLoadingManager fires
+// onLoad — covers the commit gap between zustand and React's Suspense scheduler.
+function LoadingOverlay() {
+  const { active } = useProgress();
+  const [visible, setVisible] = useState(true);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    if (!active) {
+      timerRef.current = setTimeout(() => setVisible(false), 300);
+    } else {
+      clearTimeout(timerRef.current);
+      setVisible(true);
+    }
+    return () => clearTimeout(timerRef.current);
+  }, [active]);
+
+  return visible ? <LoadingScreen /> : null;
+}
 
 export default function EyeCanvas() {
   const [currentProjectIndex, setCurrentProjectIndex] = useState(0);
@@ -28,6 +56,8 @@ export default function EyeCanvas() {
         cursor: 'pointer',
       }}
     >
+      {/* DOM loading overlay — visible while textures are fetched */}
+      <LoadingOverlay />
       <Canvas
         dpr={[1, 2]}
         gl={{ antialias: false, alpha: false }}
@@ -44,6 +74,8 @@ export default function EyeCanvas() {
             onTransitionComplete={setCurrentProjectIndex}
           />
         </Suspense>
+        {/* PostProcessing does NOT suspend — useDetectGPU defaults to high
+            quality while pending (tier -1) to avoid a cold pop on mount. */}
         <PostProcessing />
       </Canvas>
     </div>

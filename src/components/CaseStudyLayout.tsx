@@ -1,12 +1,14 @@
 'use client';
-import Link from 'next/link';
+import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 import type { Project } from '@/data/projects';
 
-interface CaseStudySection {
+export interface CaseStudySection {
   title: string;
   body: string;
-  images?: string[]; // optional image grid
+  images?: string[];
 }
 
 interface CaseStudyLayoutProps {
@@ -16,11 +18,34 @@ interface CaseStudyLayoutProps {
 }
 
 export default function CaseStudyLayout({ project, sections, nextProject }: CaseStudyLayoutProps) {
+  const router = useRouter();
+  const [exiting, setExiting] = useState(false);
+
+  const handleBack = useCallback(() => {
+    if (exiting) return;
+    setExiting(true);
+    // Fade to black for 600ms, then navigate home
+    setTimeout(() => router.push('/'), 600);
+  }, [exiting, router]);
+
   return (
     <main style={{ background: '#0a0a0a', color: 'white', minHeight: '100vh', fontFamily: 'inherit' }}>
-      {/* Back button — fixed top-left */}
-      <Link
-        href="/"
+      {/* Full-page exit overlay — fades in on back navigation */}
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: '#000',
+          zIndex: 100,
+          pointerEvents: 'none',
+          opacity: exiting ? 1 : 0,
+          transition: 'opacity 0.6s ease',
+        }}
+      />
+
+      {/* Back button */}
+      <button
+        onClick={handleBack}
         style={{
           position: 'fixed',
           top: '2rem',
@@ -34,10 +59,14 @@ export default function CaseStudyLayout({ project, sections, nextProject }: Case
           display: 'flex',
           alignItems: 'center',
           gap: '0.5rem',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          padding: 0,
         }}
       >
         ← Back
-      </Link>
+      </button>
 
       {/* Hero image */}
       <div style={{ position: 'relative', width: '100%', height: '60vh', overflow: 'hidden' }}>
@@ -48,7 +77,6 @@ export default function CaseStudyLayout({ project, sections, nextProject }: Case
           style={{ objectFit: 'cover' }}
           priority
         />
-        {/* Dark gradient at bottom */}
         <div style={{
           position: 'absolute',
           bottom: 0,
@@ -72,7 +100,14 @@ export default function CaseStudyLayout({ project, sections, nextProject }: Case
       {/* Sections */}
       {sections.map((section, i) => (
         <section key={i} style={{ padding: '4rem 6vw', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-          <h2 style={{ fontSize: 'clamp(0.7rem, 1vw, 0.9rem)', letterSpacing: '0.2em', textTransform: 'uppercase', opacity: 0.4, marginBottom: '1.5rem', fontWeight: 400 }}>
+          <h2 style={{
+            fontSize: 'clamp(0.7rem, 1vw, 0.9rem)',
+            letterSpacing: '0.2em',
+            textTransform: 'uppercase',
+            opacity: 0.4,
+            marginBottom: '1.5rem',
+            fontWeight: 400,
+          }}>
             {section.title}
           </h2>
           <p style={{ fontSize: 'clamp(1.1rem, 2vw, 1.5rem)', fontWeight: 300, maxWidth: '70ch', lineHeight: 1.7, opacity: 0.85 }}>
@@ -95,7 +130,7 @@ export default function CaseStudyLayout({ project, sections, nextProject }: Case
         </section>
       ))}
 
-      {/* Next project link */}
+      {/* Next project */}
       {nextProject && (
         <div style={{ padding: '6rem 6vw', borderTop: '1px solid rgba(255,255,255,0.08)', textAlign: 'center' }}>
           <p style={{ fontSize: '0.75rem', letterSpacing: '0.2em', textTransform: 'uppercase', opacity: 0.4, marginBottom: '1rem' }}>

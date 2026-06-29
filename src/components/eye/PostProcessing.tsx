@@ -3,6 +3,7 @@
 import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Vector2 } from 'three';
+import { useDetectGPU } from '@react-three/drei';
 import {
   EffectComposer,
   Bloom,
@@ -15,6 +16,12 @@ import {
 const FOCUS_DISTANCE = (3.5 - 0.01) / (100 - 0.01);
 
 export default function PostProcessing() {
+  // useDetectGPU suspends (via suspend-react) until GPU detection completes —
+  // this component must be rendered inside a <Suspense> boundary.
+  // Tier: 0 = unsupported, 1 = low-end, 2 = mid-range, 3 = high-end.
+  const gpuTier = useDetectGPU();
+  const isLowTier = gpuTier.tier < 2;
+
   const caRef = useRef<{ offset: Vector2 } | null>(null);
   const dissolveRef = useRef(0);
 
@@ -39,8 +46,16 @@ export default function PostProcessing() {
 
   return (
     <EffectComposer>
-      <Bloom luminanceThreshold={0.4} intensity={0.8} mipmapBlur />
-      <DepthOfField focusDistance={FOCUS_DISTANCE} focalLength={0.02} bokehScale={3} />
+      <Bloom
+        luminanceThreshold={0.4}
+        intensity={isLowTier ? 0.4 : 0.8}
+        mipmapBlur={!isLowTier}
+      />
+      <DepthOfField
+        focusDistance={FOCUS_DISTANCE}
+        focalLength={0.02}
+        bokehScale={isLowTier ? 1.5 : 3}
+      />
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <ChromaticAberration ref={caRef as any} offset={new Vector2(0.002, 0.001)} />
     </EffectComposer>

@@ -239,7 +239,12 @@ export default function EyeScene({ project, currentProjectIndex = 0, nextProject
           <primitive object={corneaMaterial} ref={corneaMaterialRef} attach="material" />
         </mesh>
 
-        {/* Upper eyelid — dark arc that sweeps down to close */}
+        {/* Upper eyelid — dark arc that sweeps down to close.
+            Draw call audit: upperLid and lowerLid each contribute one draw call
+            (meshStandardMaterial, not a shader material). Merging them into a
+            single BufferGeometry is not practical because useBlink needs
+            independent refs to animate them separately. Total eye draw calls: 7
+            (sclera, projectLayer, iris, pupil, cornea, upperLid, lowerLid). */}
         <mesh
           ref={upperLidRef}
           name="upperLid"

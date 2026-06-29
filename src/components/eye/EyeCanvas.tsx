@@ -2,9 +2,24 @@
 
 import { useState, Suspense, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
+import { useTexture, useProgress } from '@react-three/drei';
 import EyeScene from './EyeScene';
 import PostProcessing from './PostProcessing';
 import { projects } from '@/data/projects';
+import LoadingScreen from '../LoadingScreen';
+
+// Preload all project textures at module evaluation time (client-side only;
+// TextureLoader uses Image/fetch which are not available server-side).
+if (typeof window !== 'undefined') {
+  projects.forEach(p => useTexture.preload(p.image));
+}
+
+// Renders a fixed overlay while Three.js's DefaultLoadingManager is active.
+// useProgress is a zustand store — safe to call outside the Canvas.
+function LoadingOverlay() {
+  const { active } = useProgress();
+  return active ? <LoadingScreen /> : null;
+}
 
 export default function EyeCanvas() {
   const [currentProjectIndex, setCurrentProjectIndex] = useState(0);
@@ -28,6 +43,8 @@ export default function EyeCanvas() {
         cursor: 'pointer',
       }}
     >
+      {/* DOM loading overlay — visible while textures are fetched */}
+      <LoadingOverlay />
       <Canvas
         dpr={[1, 2]}
         gl={{ antialias: false, alpha: false }}
@@ -44,7 +61,11 @@ export default function EyeCanvas() {
             onTransitionComplete={setCurrentProjectIndex}
           />
         </Suspense>
-        <PostProcessing />
+        {/* PostProcessing uses useDetectGPU (suspends once on first render) —
+            keep in its own boundary so the eye scene renders independently. */}
+        <Suspense fallback={null}>
+          <PostProcessing />
+        </Suspense>
       </Canvas>
     </div>
   );

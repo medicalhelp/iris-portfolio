@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -20,17 +20,25 @@ interface CaseStudyLayoutProps {
 export default function CaseStudyLayout({ project, sections, nextProject }: CaseStudyLayoutProps) {
   const router = useRouter();
   const [exiting, setExiting] = useState(false);
+  const navigatingRef = useRef(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    return () => clearTimeout(timeoutRef.current);
+  }, []);
 
   const handleBack = useCallback(() => {
-    if (exiting) return;
+    if (navigatingRef.current) return;
+    navigatingRef.current = true;
     setExiting(true);
-    // Fade to black for 600ms, then navigate home
-    setTimeout(() => router.push('/'), 600);
-  }, [exiting, router]);
+    // Signal home page to play its fade-in transition
+    sessionStorage.setItem('iris:from-project', '1');
+    timeoutRef.current = setTimeout(() => router.push('/'), 600);
+  }, [router]);
 
   return (
     <main style={{ background: '#0a0a0a', color: 'white', minHeight: '100vh', fontFamily: 'inherit' }}>
-      {/* Full-page exit overlay — fades in on back navigation */}
+      {/* Full-page exit overlay */}
       <div
         style={{
           position: 'fixed',
@@ -55,7 +63,6 @@ export default function CaseStudyLayout({ project, sections, nextProject }: Case
           fontSize: '0.75rem',
           letterSpacing: '0.15em',
           textTransform: 'uppercase',
-          textDecoration: 'none',
           display: 'flex',
           alignItems: 'center',
           gap: '0.5rem',

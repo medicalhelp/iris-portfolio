@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, Suspense, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { Canvas } from '@react-three/fiber';
 import EyeScene from './EyeScene';
 import { projects } from '@/data/projects';
+
+const PostProcessing = dynamic(() => import('./PostProcessing'), { ssr: false });
 
 export default function EyeCanvas() {
   const [currentProjectIndex, setCurrentProjectIndex] = useState(0);
@@ -43,6 +46,7 @@ export default function EyeCanvas() {
             onTransitionComplete={setCurrentProjectIndex}
           />
         </Suspense>
+        <PostProcessing />
       </Canvas>
     </div>
   );

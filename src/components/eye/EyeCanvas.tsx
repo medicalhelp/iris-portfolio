@@ -1,12 +1,10 @@
 'use client';
 
 import { useState, Suspense, useEffect } from 'react';
-import dynamic from 'next/dynamic';
 import { Canvas } from '@react-three/fiber';
 import EyeScene from './EyeScene';
+import PostProcessing from './PostProcessing';
 import { projects } from '@/data/projects';
-
-const PostProcessing = dynamic(() => import('./PostProcessing'), { ssr: false });
 
 export default function EyeCanvas() {
   const [currentProjectIndex, setCurrentProjectIndex] = useState(0);
@@ -32,7 +30,7 @@ export default function EyeCanvas() {
     >
       <Canvas
         dpr={[1, 2]}
-        gl={{ antialias: true, alpha: false }}
+        gl={{ antialias: false, alpha: false }}
         camera={{ fov: 45, position: [0, 0, 3.5], near: 0.01, far: 100 }}
         onCreated={({ gl }) => {
           gl.setClearColor('#0a0a0a');

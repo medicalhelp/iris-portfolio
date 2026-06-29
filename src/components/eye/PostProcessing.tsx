@@ -14,13 +14,14 @@ import {
 // focusDistance is normalized over camera depth range (near=0.01, far=100).
 // Eye is at world z=0, camera at z=3.5 → (3.5 - 0.01) / (100 - 0.01) ≈ 0.035
 const FOCUS_DISTANCE = (3.5 - 0.01) / (100 - 0.01);
+// Stable reference — prevents re-render from stomping the animated offset value
+const BASE_CA_OFFSET = new Vector2(0.002, 0.001);
 
 export default function PostProcessing() {
-  // useDetectGPU suspends (via suspend-react) until GPU detection completes —
-  // this component must be rendered inside a <Suspense> boundary.
-  // Tier: 0 = unsupported, 1 = low-end, 2 = mid-range, 3 = high-end.
+  // tier -1 = detection pending → default to high quality to avoid a cold pop.
+  // tier 0-1 = low-end → reduce quality; tier 2-3 = mid/high → full quality.
   const gpuTier = useDetectGPU();
-  const isLowTier = gpuTier.tier < 2;
+  const isLowTier = gpuTier.tier !== -1 && gpuTier.tier < 2;
 
   const caRef = useRef<{ offset: Vector2 } | null>(null);
   const dissolveRef = useRef(0);
@@ -57,7 +58,7 @@ export default function PostProcessing() {
         bokehScale={isLowTier ? 1.5 : 3}
       />
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      <ChromaticAberration ref={caRef as any} offset={new Vector2(0.002, 0.001)} />
+      <ChromaticAberration ref={caRef as any} offset={BASE_CA_OFFSET} />
     </EffectComposer>
   );
 }

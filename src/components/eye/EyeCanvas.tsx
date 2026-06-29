@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense, useEffect } from 'react';
+import { useState, Suspense, useEffect, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { useTexture, useProgress } from '@react-three/drei';
 import EyeScene from './EyeScene';
@@ -14,11 +14,24 @@ if (typeof window !== 'undefined') {
   projects.forEach(p => useTexture.preload(p.image));
 }
 
-// Renders a fixed overlay while Three.js's DefaultLoadingManager is active.
-// useProgress is a zustand store — safe to call outside the Canvas.
+// Holds the overlay visible for an extra 300ms after DefaultLoadingManager fires
+// onLoad — covers the commit gap between zustand and React's Suspense scheduler.
 function LoadingOverlay() {
   const { active } = useProgress();
-  return active ? <LoadingScreen /> : null;
+  const [visible, setVisible] = useState(true);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    if (!active) {
+      timerRef.current = setTimeout(() => setVisible(false), 300);
+    } else {
+      clearTimeout(timerRef.current);
+      setVisible(true);
+    }
+    return () => clearTimeout(timerRef.current);
+  }, [active]);
+
+  return visible ? <LoadingScreen /> : null;
 }
 
 export default function EyeCanvas() {
@@ -61,11 +74,9 @@ export default function EyeCanvas() {
             onTransitionComplete={setCurrentProjectIndex}
           />
         </Suspense>
-        {/* PostProcessing uses useDetectGPU (suspends once on first render) —
-            keep in its own boundary so the eye scene renders independently. */}
-        <Suspense fallback={null}>
-          <PostProcessing />
-        </Suspense>
+        {/* PostProcessing does NOT suspend — useDetectGPU defaults to high
+            quality while pending (tier -1) to avoid a cold pop on mount. */}
+        <PostProcessing />
       </Canvas>
     </div>
   );

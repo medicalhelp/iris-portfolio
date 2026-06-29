@@ -3,6 +3,7 @@
 import { useState, Suspense, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import EyeScene from './EyeScene';
+import PostProcessing from './PostProcessing';
 import { projects } from '@/data/projects';
 
 export default function EyeCanvas() {
@@ -29,7 +30,7 @@ export default function EyeCanvas() {
     >
       <Canvas
         dpr={[1, 2]}
-        gl={{ antialias: true, alpha: false }}
+        gl={{ antialias: false, alpha: false }}
         camera={{ fov: 45, position: [0, 0, 3.5], near: 0.01, far: 100 }}
         onCreated={({ gl }) => {
           gl.setClearColor('#0a0a0a');
@@ -43,6 +44,7 @@ export default function EyeCanvas() {
             onTransitionComplete={setCurrentProjectIndex}
           />
         </Suspense>
+        <PostProcessing />
       </Canvas>
     </div>
   );
